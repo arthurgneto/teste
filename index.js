@@ -25,6 +25,7 @@ create({
   session: 'demo-bot',
   headless: true,
   useChrome: false,
+  autoClose: 0, // <- aqui
   puppeteerOptions: {
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   },
@@ -34,6 +35,7 @@ create({
     console.log(asciiQR);
   },
 })
+
   .then((client) => {
     console.log('🤖 Bot iniciado com sucesso!');
 
@@ -122,7 +124,7 @@ create({
               : '📄 LOCAÇÃO';
 
           const msgCorretor = `🏘️ Novo contato – ${tipoAcao}\n\n👤 Nome: ${estado.nome}\n📱 Tel: ${estado.telefone}\n🏠 Imóvel: ${estado.tipo}\n💸 Valor: ${estado.valor}`;
-          const numeroCorretor = '5514999999999@c.us';
+          const numeroCorretor = '5514996435877@c.us';
 
           try {
             const status = await client.checkNumberStatus(numeroCorretor);
@@ -224,3 +226,6 @@ create({
   .catch((erro) => {
     console.error('Erro ao iniciar o bot:', erro);
   });
+
+
+  

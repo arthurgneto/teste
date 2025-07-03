@@ -1,6 +1,3 @@
-2025/07/02-00:26:26.976 45f4 Reusing MANIFEST F:\Digital\teste\teste\tokens\demo-bot\Default\Local Storage\leveldb/MANIFEST-000001
-2025/07/02-00:26:26.981 45f4 Recovering log #3
-2025/07/02-00:26:26.983 45f4 Reusing old log F:\Digital\teste\teste\tokens\demo-bot\Default\Local Storage\leveldb/000003.log 
-2025/07/02-00:37:27.115 45f4 Level-0 table #5: started
-2025/07/02-00:37:27.140 45f4 Level-0 table #5: 17308 bytes OK
-2025/07/02-00:37:27.142 45f4 Delete type=0 #3
+2025/07/02-00:51:16.965 3364 Reusing MANIFEST F:\Digital\teste\teste\tokens\demo-bot\Default\Local Storage\leveldb/MANIFEST-000001
+2025/07/02-00:51:16.967 3364 Recovering log #4
+2025/07/02-00:51:16.970 3364 Reusing old log F:\Digital\teste\teste\tokens\demo-bot\Default\Local Storage\leveldb/000004.log 
