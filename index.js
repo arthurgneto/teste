@@ -1,4 +1,5 @@
 const { create } = require('@wppconnect-team/wppconnect');
+const axios = require('axios');
 
 const estados = new Map();
 
@@ -18,12 +19,11 @@ const menu = `🤖 *Bot de Demonstração* – Escolha uma opção:
 3️⃣ Corretor de Imóveis`;
 
 create({
-  session: 'demo-bot',
+  session: 'bot-teste-clientes',
   headless: true,
-  useChrome: false,
-  autoClose: 0,
+  useChrome: true,
   puppeteerOptions: {
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    args: ['--disable-setuid-sandbox'],
   },
   catchQR: (base64Qr, asciiQR) => {
     console.clear();
@@ -44,84 +44,62 @@ create({
         return client.sendText(contato, `🔁 Atendimento reiniciado!\n\n${menu}`);
       }
 
-      // Fluxo Barbeiro
+      // Barbeiro
       if (estado.barbeiroEtapa) {
         switch (estado.barbeiroEtapa) {
           case 'nome':
             estado.nome = msg.body;
             estado.barbeiroEtapa = 'telefone';
             estados.set(contato, estado);
-            return client.sendText(contato, '📱 Informe seu telefone com DDD:');
+            return client.sendText(contato, '📱 Informe seu telefone:');
 
           case 'telefone':
             estado.telefone = msg.body;
             estado.barbeiroEtapa = 'servico';
             estados.set(contato, estado);
-            return client.sendText(contato, '💈 Qual serviço deseja?\n1️⃣ Barba - R$ 20\n2️⃣ Corte - R$ 30\n3️⃣ Pezinho - R$ 15');
+            return client.sendText(contato, '✂️ Qual serviço deseja?\n1️⃣ Barba (R$ 25)\n2️⃣ Corte (R$ 40)\n3️⃣ Pezinho (R$ 15)');
 
           case 'servico':
-            switch (texto) {
-              case '1':
-                estado.servico = 'Barba - R$ 20';
-                break;
-              case '2':
-                estado.servico = 'Corte - R$ 30';
-                break;
-              case '3':
-                estado.servico = 'Pezinho - R$ 15';
-                break;
-              default:
-                return client.sendText(contato, '❗ Opção inválida. Digite 1, 2 ou 3.');
+            const servicos = { '1': 'Barba (R$ 25)', '2': 'Corte (R$ 40)', '3': 'Pezinho (R$ 15)' };
+            if (!servicos[texto]) {
+              return client.sendText(contato, '❗ Opção inválida. Escolha 1, 2 ou 3.');
             }
-            estado.barbeiroEtapa = 'data';
+            estado.servico = servicos[texto];
+            estado.barbeiroEtapa = 'datahora';
             estados.set(contato, estado);
-            return client.sendText(contato, '📅 Informe o dia do agendamento (ex: 05/07):');
+            return client.sendText(contato, '📅 Informe o dia e horário do agendamento:');
 
-          case 'data':
-            estado.data = msg.body;
-            estado.barbeiroEtapa = 'hora';
-            estados.set(contato, estado);
-            return client.sendText(contato, '⏰ Informe o horário (ex: 15:00):');
+          case 'datahora':
+            estado.datahora = msg.body;
+            estados.delete(contato);
 
-          case 'hora':
-            estado.hora = msg.body;
-            const resumo = `💈 *Novo Agendamento - Barbeiro*
-
-👤 Nome: ${estado.nome}
-📱 Telefone: ${estado.telefone}
-✂️ Serviço: ${estado.servico}
-📅 Dia: ${estado.data}
-⏰ Hora: ${estado.hora}`;
-
-            const numeroBarbeiro = '5514996435877@c.us';
+            const resumo = `💈 *Novo Agendamento - Barbeiro*\n\n👤 Nome: ${estado.nome}\n📱 Tel: ${estado.telefone}\n🧾 Serviço: ${estado.servico}\n📅 Data e hora: ${estado.datahora}`;
 
             try {
-              const status = await client.checkNumberStatus(numeroBarbeiro);
+              const numero = '5514996435877@c.us';
+              const status = await client.checkNumberStatus(numero);
               if (status.canReceiveMessage) {
-                await client.sendText(numeroBarbeiro, resumo);
+                await client.sendText(numero, resumo);
               }
             } catch (err) {
               console.error('❌ Erro ao enviar para o barbeiro:', err);
             }
 
-            await client.sendText(contato, '✅ Agendamento feito com sucesso! Em breve confirmaremos com você. Digite *menu* para voltar.');
-            estados.delete(contato);
-            return;
+            return client.sendText(contato, '✅ Agendamento enviado! Em breve entraremos em contato. Digite *menu* para voltar.');
         }
       }
 
-      // Fluxo Corretor (sem envio)
+      // Corretor
       if (estado.corretorEtapa) {
         switch (estado.corretorEtapa) {
           case 'inicio':
-            if (['1', '2', '3'].includes(texto)) {
-              estado.corretorEscolha = texto;
-              estado.corretorEtapa = 'nome';
-              estados.set(contato, estado);
-              return client.sendText(contato, '👤 Qual seu nome completo?');
-            } else {
+            if (!['1', '2', '3'].includes(texto)) {
               return client.sendText(contato, '❗ Escolha:\n1️⃣ Vender\n2️⃣ Comprar\n3️⃣ Alugar');
             }
+            estado.acao = texto;
+            estado.corretorEtapa = 'nome';
+            estados.set(contato, estado);
+            return client.sendText(contato, '👤 Qual seu nome completo?');
 
           case 'nome':
             estado.nome = msg.body;
@@ -139,12 +117,25 @@ create({
             estado.tipo = msg.body;
             estado.corretorEtapa = 'valor';
             estados.set(contato, estado);
-            return client.sendText(contato, '💰 Valor estimado:');
+            return client.sendText(contato, '💸 Valor pretendido:');
 
           case 'valor':
-            await client.sendText(contato, '✅ Informações recebidas! Em breve um corretor entrará em contato.');
+            estado.valor = msg.body;
+
+            // Enviar para Google Sheets
+            try {
+              await axios.post('https://script.google.com/macros/s/AKfycbz4t6wHPzsi9Wo6UPtK27NOuM2E1hsR7jqQ3e1skw9pem0oB9edAE_pO78-AUqNIKKYoQ/exec', {
+                nome: estado.nome,
+                telefone: estado.telefone,
+                tipo: estado.tipo,
+                valor: estado.valor
+              });
+            } catch (erro) {
+              console.error('❌ Erro ao enviar para Google Sheets:', erro.message);
+            }
+
             estados.delete(contato);
-            return;
+            return client.sendText(contato, '✅ Obrigado! Seus dados foram registrados e enviados para o corretor. Digite *menu* para voltar.');
         }
       }
 
@@ -162,20 +153,32 @@ create({
       switch (texto) {
         case '1':
           estados.set(contato, { barbeiroEtapa: 'nome' });
-          return client.sendText(contato, `💈 *Barbeiro Exemplo*\n\n1️⃣ Barba: R$ 20\n2️⃣ Corte: R$ 30\n3️⃣ Pezinho: R$ 15\n\n✍️ Vamos agendar! Qual seu nome?`);
+          return client.sendText(
+            contato,
+            `💈 *Barbearia Exemplo*\n\n💵 Preços:\n- Barba: R$ 25\n- Corte: R$ 40\n- Pezinho: R$ 15\n\n✍️ Vamos agendar! Qual seu nome?`
+          );
 
         case '2':
-          return client.sendText(contato, `🏋️ *Academia Exemplo*\n\n1️⃣ Musculação: R$ 99/mês\n2️⃣ Natação: R$ 120/mês\n3️⃣ Pilates: R$ 150/mês\n\nHorário: Seg a Sex das 6h às 22h`);
+          return client.sendText(
+            contato,
+            `🏋️ *Academia Exemplo*\n\n1️⃣ Musculação: R$ 99/mês\n2️⃣ Natação: R$ 120/mês\n3️⃣ Pilates: R$ 150/mês\n\nHorário: Seg a Sex das 6h às 22h`
+          );
 
         case '3':
           estados.set(contato, { corretorEtapa: 'inicio' });
-          return client.sendText(contato, `🏘️ *Corretor de Imóveis*\n\n1️⃣ Vender\n2️⃣ Comprar\n3️⃣ Alugar`);
+          return client.sendText(
+            contato,
+            `🏘️ *Corretor de Imóveis*\n\n1️⃣ Vender\n2️⃣ Comprar\n3️⃣ Alugar`
+          );
 
         default:
-          return client.sendText(contato, '❓ Opção inválida. Digite *menu* para ver novamente.');
+          return client.sendText(
+            contato,
+            '❓ Opção inválida. Digite *menu* para ver novamente.'
+          );
       }
     });
   })
   .catch((erro) => {
-    console.error('Erro ao iniciar o bot:', erro);
+    console.error('❌ Erro ao iniciar o bot:', erro);
   });
